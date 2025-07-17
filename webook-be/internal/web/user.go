@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/dlclark/regexp2"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/newton-miku/webook/webook-be/internal/domain"
 	"github.com/newton-miku/webook/webook-be/internal/service"
@@ -15,6 +16,7 @@ type UserHandler struct {
 	svc         *service.UserService
 	EmailReg    *regexp2.Regexp
 	PasswordReg *regexp2.Regexp
+	DateReg     *regexp2.Regexp
 }
 
 func NewUserHandler(svc *service.UserService) *UserHandler {
@@ -24,13 +26,17 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 		// EmailRegPattern = `^\w+(-+.\w+)*@\w+(-.\w+)*.\w+(-.\w+)*$`
 		// 密码正则（长度6位以上，包含字母和数字）
 		PasswordRegPattern = `^(?=.*[a-zA-Z])(?=.*\d).{6,}$`
+		// 日期正则
+		DateRegPattern = `^\d{4}-\d{2}-\d{2}$`
 	)
 	emailReg := regexp2.MustCompile(EmailRegPattern, regexp2.None)
 	pwdReg := regexp2.MustCompile(PasswordRegPattern, regexp2.None)
+	dateReg := regexp2.MustCompile(DateRegPattern, regexp2.None)
 	return &UserHandler{
 		svc:         svc,
 		EmailReg:    emailReg,
 		PasswordReg: pwdReg,
+		DateReg:     dateReg,
 	}
 }
 
@@ -138,7 +144,7 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	err := u.svc.Login(ctx, domain.User{
+	user, err := u.svc.Login(ctx, domain.User{
 		Email:    req.Email,
 		Password: []byte(req.Password),
 	})
@@ -157,14 +163,65 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
+	// 设置 session
+	sess := sessions.Default(ctx)
+	sess.Set("userId", user.Id)
+	sess.Save()
+
 	ctx.JSON(http.StatusOK, Msg{
 		Code: 200,
 		Msg:  "登录成功",
 	})
 }
 func (u *UserHandler) Profile(ctx *gin.Context) {
-
+	sess := sessions.Default(ctx)
+	id := sess.Get("userId")
+	user, err := u.svc.Profile(ctx.Request.Context(), id.(int64))
+	if err != nil {
+		if errors.Is(err, service.ErrProfileNotFound) {
+		}
+	}
+	ctx.JSON(http.StatusOK, user)
 }
 func (u *UserHandler) Edit(ctx *gin.Context) {
+	type EditReq struct {
+		Birthday string `json:"birthday"`
+		Nickname string `json:"nickname"`
+		Summary  string `json:"aboutMe"`
+	}
+	var req EditReq
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	// 校验日期格式是否为2023-05-05
+	ok, err := u.DateReg.MatchString(req.Birthday)
+	if err != nil {
+		fmt.Println("生日格式校验时系统内部出错,err:", err)
+		ctx.JSON(http.StatusOK, Msg{
+			Code: 500,
+			Msg:  "系统内部出错,请稍后再试",
+		})
+		return
+	}
+	if !ok {
+		ctx.JSON(http.StatusOK, Msg{
+			Code: 400,
+			Msg:  "生日格式有误",
+		})
+		return
+	}
+	sess := sessions.Default(ctx)
+	id := sess.Get("userId")
+	err = u.svc.UpdateProfile(ctx, domain.UserProfile{
+		UID:      id.(int64),
+		Birthday: req.Birthday,
+		Nickname: req.Nickname,
+		Summary:  req.Summary,
+	})
+	if err != nil {
+		ctx.JSON(http.StatusOK, fmt.Sprint(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, Msg{Code: 0, Msg: "更新成功"})
 
 }

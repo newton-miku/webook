@@ -4,8 +4,15 @@ go 1.24.3
 
 require (
 	github.com/gin-contrib/cors v1.7.6
+	github.com/gin-contrib/sessions v1.0.4
 	github.com/gin-gonic/gin v1.10.1
 	github.com/stretchr/testify v1.10.0
+)
+
+require (
+	github.com/gorilla/context v1.1.2 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/gorilla/sessions v1.4.0 // indirect
 )
 
 require (
