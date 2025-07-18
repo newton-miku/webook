@@ -214,7 +214,7 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 	// 将字符串转换为 time.Time 类型进行日期比较
 	reqBirthday, err := time.Parse("2006-01-02", req.Birthday)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, Msg{
+		ctx.JSON(http.StatusOK, Msg{
 			Code: 400,
 			Msg:  "生日解析失败",
 		})
@@ -224,7 +224,7 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 	// 获取当前时间并校验请求中的日期是否超过当前时间
 	now := time.Now()
 	if reqBirthday.After(now) {
-		ctx.JSON(http.StatusBadRequest, Msg{
+		ctx.JSON(http.StatusOK, Msg{
 			Code: 400,
 			Msg:  "生日不能超过当前日期",
 		})
@@ -234,7 +234,7 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 	// 设置允许的最小日期，例如：1900-01-01
 	minDate := time.Date(1900, 1, 1, 0, 0, 0, 0, time.Now().Location())
 	if reqBirthday.Before(minDate) {
-		ctx.JSON(http.StatusBadRequest, Msg{
+		ctx.JSON(http.StatusOK, Msg{
 			Code: 400,
 			Msg:  "生日不能早于1900年1月1日",
 		})
