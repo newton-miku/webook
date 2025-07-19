@@ -10,6 +10,8 @@ require (
 )
 
 require (
+	github.com/boj/redistore v1.4.1 // indirect
+	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.4.0 // indirect

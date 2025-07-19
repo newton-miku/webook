@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/newton-miku/webook/webook-be/internal/repository"
 	"github.com/newton-miku/webook/webook-be/internal/repository/dao"
@@ -49,7 +49,14 @@ func initWebServer() *gin.Engine {
 		},
 		MaxAge: 12 * time.Hour,
 	}))
-	store := cookie.NewStore([]byte("secret"))
+
+	store, err := redis.NewStore(16, "tcp", "localhost:6379", "", "", []byte("eY3VQBCzq8p748ME20cWWBuJs7ZVqN9W"), []byte("f2Ug8BsFjZmuUyAVi11ZA2J36Sc0RXwE"))
+	// 此处的两个key长度必须是2的整数倍，否则会报错
+	if err != nil {
+		panic(err)
+	}
+	// store := cookie.NewStore([]byte("secret"))
+	// store := memstore.NewStore([]byte("secret"))
 	server.Use(sessions.Sessions("mysession", store))
 
 	server.Use(middleware.NewLoginMiddleware().

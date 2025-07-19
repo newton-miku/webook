@@ -17,7 +17,8 @@ const onFinish = (values: any) => {
                 const msg = res.data?.msg || JSON.stringify(res.data)
                 alert(msg);
                 if(res.data.code == 0) {
-                    router.push('/articles/list')
+                    // router.push('/articles/list')
+                    router.push('/users/profile')
                 }
             }
         }).catch((err) => {

@@ -49,12 +49,14 @@ type Msg struct {
 func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	server.POST("/users/signup", u.SignUp)
 	server.POST("/users/login", u.Login)
+	server.POST("/users/logout", u.Logout)
 	server.GET("/users/profile", u.Profile)
 	server.POST("/users/edit", u.Edit)
 }
 func (u *UserHandler) RegisterRoutesV1(ug *gin.RouterGroup) {
 	ug.POST("/signup", u.SignUp)
 	ug.POST("/login", u.Login)
+	ug.POST("/logout", u.Logout)
 	ug.GET("/profile", u.Profile)
 	ug.POST("/edit", u.Edit)
 }
@@ -167,13 +169,31 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 	// 设置 session
 	sess := sessions.Default(ctx)
 	sess.Set("userId", user.Id)
+	sess.Options(sessions.Options{
+		HttpOnly: true,
+		MaxAge:   60,
+	})
 	sess.Save()
 
 	ctx.JSON(http.StatusOK, Msg{
-		Code: 200,
+		Code: 0,
 		Msg:  "登录成功",
 	})
 }
+
+func (u *UserHandler) Logout(ctx *gin.Context) {
+	sess := sessions.Default(ctx)
+	sess.Options(sessions.Options{
+		MaxAge: -1,
+	})
+	sess.Clear()
+	sess.Save()
+	ctx.JSON(http.StatusOK, Msg{
+		Code: 0,
+		Msg:  "登出成功",
+	})
+}
+
 func (u *UserHandler) Profile(ctx *gin.Context) {
 	sess := sessions.Default(ctx)
 	id := sess.Get("userId")
