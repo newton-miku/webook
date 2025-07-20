@@ -9,8 +9,10 @@ import (
 	"github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/newton-miku/webook/webook-be/internal/domain"
 	"github.com/newton-miku/webook/webook-be/internal/service"
+	"github.com/newton-miku/webook/webook-be/internal/web/middleware"
 )
 
 type UserHandler struct {
@@ -165,16 +167,22 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		}
 		return
 	}
-
-	// 设置 session
-	sess := sessions.Default(ctx)
-	sess.Set("userId", user.Id)
-	sess.Options(sessions.Options{
-		HttpOnly: true,
-		MaxAge:   60,
-	})
-	sess.Save()
-
+	claims := middleware.JWTClaims{
+		UserId: user.Id,
+	}
+	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(middleware.JWTExpire))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	tokenStr, err := token.SignedString(middleware.JwtSecret)
+	if err != nil {
+		fmt.Println("JWT 签名错误,err:", err)
+		ctx.JSON(http.StatusOK, Msg{
+			Code: http.StatusInternalServerError,
+			Msg:  "登录时系统发生错误",
+		})
+		return
+	}
+	ctx.Header("X-JWT-Token", tokenStr)
+	print(user.Id)
 	ctx.JSON(http.StatusOK, Msg{
 		Code: 0,
 		Msg:  "登录成功",
@@ -195,9 +203,16 @@ func (u *UserHandler) Logout(ctx *gin.Context) {
 }
 
 func (u *UserHandler) Profile(ctx *gin.Context) {
-	sess := sessions.Default(ctx)
-	id := sess.Get("userId")
-	user, err := u.svc.Profile(ctx.Request.Context(), id.(int64))
+	c, _ := ctx.Get("claims")
+	claims, ok := c.(*middleware.JWTClaims)
+	if !ok {
+		ctx.JSON(http.StatusOK, Msg{
+			Code: http.StatusInternalServerError,
+			Msg:  "内部错误",
+		})
+	}
+	id := claims.UserId
+	user, err := u.svc.Profile(ctx.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, service.ErrProfileNotFound) {
 		}

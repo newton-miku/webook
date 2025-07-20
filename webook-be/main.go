@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/newton-miku/webook/webook-be/internal/repository"
 	"github.com/newton-miku/webook/webook-be/internal/repository/dao"
@@ -41,7 +39,8 @@ func initWebServer() *gin.Engine {
 	server.Use(cors.New(cors.Config{
 		// AllowOrigins: []string{"http://localhost:3000"},
 		// AllowMethods: []string{"PUT", "PATCH", "POST"},
-		AllowHeaders: []string{"Content-Type", "Authorization"},
+		AllowHeaders:  []string{"Content-Type", "Authorization"},
+		ExposeHeaders: []string{"X-JWT-Token"},
 		// 是否允许携带cookie
 		AllowCredentials: true,
 		AllowOriginFunc: func(origin string) bool {
@@ -50,16 +49,16 @@ func initWebServer() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	store, err := redis.NewStore(16, "tcp", "localhost:6379", "", "", []byte("eY3VQBCzq8p748ME20cWWBuJs7ZVqN9W"), []byte("f2Ug8BsFjZmuUyAVi11ZA2J36Sc0RXwE"))
-	// 此处的两个key长度必须是2的整数倍，否则会报错
-	if err != nil {
-		panic(err)
-	}
-	// store := cookie.NewStore([]byte("secret"))
-	// store := memstore.NewStore([]byte("secret"))
-	server.Use(sessions.Sessions("mysession", store))
+	// store, err := redis.NewStore(16, "tcp", "localhost:6379", "", "", []byte("eY3VQBCzq8p748ME20cWWBuJs7ZVqN9W"), []byte("f2Ug8BsFjZmuUyAVi11ZA2J36Sc0RXwE"))
+	// // 此处的两个key长度必须是2的整数倍，否则会报错
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// // store := cookie.NewStore([]byte("secret"))
+	// // store := memstore.NewStore([]byte("secret"))
+	// server.Use(sessions.Sessions("mysession", store))
 
-	server.Use(middleware.NewLoginMiddleware().
+	server.Use(middleware.NewJWTLoginMiddleware().
 		AddIgnorePath("/users/login").
 		AddIgnorePath("/users/signup").
 		Build())
