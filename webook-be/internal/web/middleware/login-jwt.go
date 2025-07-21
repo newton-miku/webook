@@ -16,7 +16,8 @@ type LoginJWTMiddleware struct {
 
 type JWTClaims struct {
 	jwt.RegisteredClaims
-	UserId int64
+	UserId    int64
+	UserAgent string
 }
 
 var (
@@ -72,7 +73,12 @@ func (l *LoginJWTMiddleware) Build() gin.HandlerFunc {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		if time.Until(claims.ExpiresAt.Time) < JWTExpire/2 {
+		if claims.UserAgent != ctx.Request.UserAgent() {
+			// ua异常
+			// 可能是JWT泄露或浏览器更新
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+		}
+		if time.Until(claims.ExpiresAt.Time) < (JWTExpire / 2) {
 			claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(JWTExpire))
 			token = jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 			tokenStr, _ := token.SignedString(JwtSecret)

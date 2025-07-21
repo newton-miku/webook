@@ -167,8 +167,18 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		}
 		return
 	}
+	ua := ctx.Request.UserAgent()
+	if ua == "" {
+		// ua为空或者无ua头
+		ctx.JSON(http.StatusOK, Msg{
+			Code: http.StatusBadRequest,
+			Msg:  "Go Away",
+		})
+		return
+	}
 	claims := middleware.JWTClaims{
-		UserId: user.Id,
+		UserId:    user.Id,
+		UserAgent: ua,
 	}
 	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(middleware.JWTExpire))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
