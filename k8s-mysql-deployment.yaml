@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-mysql
+  namespace: webook
+spec:
+  selector:
+    matchLabels:
+      app: webook-mysql
+  template:
+    metadata:
+      labels:
+        app: webook-mysql
+    spec:
+      containers:
+      - name: webook-mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: root
+        volumeMounts:
+        - mountPath: /var/lib/mysql
+          name: mysql-storage
+      volumes:
+        - name:  mysql-storage
+          persistentVolumeClaim:
+            claimName: webook-mysql-claim

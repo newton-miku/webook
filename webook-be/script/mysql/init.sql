@@ -1,1 +1,1 @@
-create database webook;
+CREATE DATABASE IF NOT EXISTS `webook`;

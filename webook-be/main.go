@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/newton-miku/webook/webook-be/internal/config"
 	"github.com/newton-miku/webook/webook-be/internal/repository"
 	"github.com/newton-miku/webook/webook-be/internal/repository/dao"
 	"github.com/newton-miku/webook/webook-be/internal/service"
@@ -24,6 +25,9 @@ func main() {
 	user := initUser(db)
 	user.RegisterRoutesV1(server.Group("/users"))
 
+	server.GET("/ping", func(ctx *gin.Context) {
+		ctx.String(200, "pong")
+	})
 	server.Run(":8080")
 }
 
@@ -52,7 +56,7 @@ func initWebServer() *gin.Engine {
 	}))
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: config.Config.Redis.Addr,
 	})
 
 	server.Use(ratelimit.NewBuilder(redisClient, time.Minute, 50).Build())
@@ -67,6 +71,7 @@ func initWebServer() *gin.Engine {
 	// server.Use(sessions.Sessions("mysession", store))
 
 	server.Use(middleware.NewJWTLoginMiddleware().
+		AddIgnorePath("/ping").
 		AddIgnorePath("/users/login").
 		AddIgnorePath("/users/signup").
 		Build())
@@ -75,7 +80,7 @@ func initWebServer() *gin.Engine {
 
 func initDB() *gorm.DB {
 	// 初始化数据库连接
-	db, err := gorm.Open(mysql.Open("root:root@tcp(127.0.0.1:13306)/webook"))
+	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
 	if err != nil {
 		panic(err)
 	}

@@ -134,7 +134,7 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, Msg{
-		Code: 200,
+		Code: 0,
 		Msg:  "注册成功",
 	})
 	// fmt.Printf("req: %v\n", req)
@@ -286,10 +286,17 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 		return
 	}
 
-	sess := sessions.Default(ctx)
-	id := sess.Get("userId")
+	c, _ := ctx.Get("claims")
+	claims, ok := c.(*middleware.JWTClaims)
+	if !ok {
+		ctx.JSON(http.StatusOK, Msg{
+			Code: http.StatusInternalServerError,
+			Msg:  "内部错误",
+		})
+	}
+	id := claims.UserId
 	err = u.svc.UpdateProfile(ctx, domain.UserProfile{
-		UID:      id.(int64),
+		UID:      id,
 		Birthday: req.Birthday,
 		Nickname: req.Nickname,
 		Summary:  req.Summary,
