@@ -12,8 +12,6 @@ import (
 	"github.com/newton-miku/webook/webook-be/internal/service"
 	"github.com/newton-miku/webook/webook-be/internal/web"
 	"github.com/newton-miku/webook/webook-be/internal/web/middleware"
-	"github.com/newton-miku/webook/webook-be/pkg/ginx/middleware/ratelimit"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -55,11 +53,11 @@ func initWebServer() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: config.Config.Redis.Addr,
-	})
+	// redisClient := redis.NewClient(&redis.Options{
+	// 	Addr: config.Config.Redis.Addr,
+	// })
 
-	server.Use(ratelimit.NewBuilder(redisClient, time.Minute, 50).Build())
+	// server.Use(ratelimit.NewBuilder(redisClient, time.Minute, 50).Build())
 
 	// store, err := redis.NewStore(16, "tcp", "localhost:6379", "", "", []byte("eY3VQBCzq8p748ME20cWWBuJs7ZVqN9W"), []byte("f2Ug8BsFjZmuUyAVi11ZA2J36Sc0RXwE"))
 	// // 此处的两个key长度必须是2的整数倍，否则会报错
